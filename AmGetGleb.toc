@@ -1,0 +1,9 @@
+## Interface: 20400
+## Title: AmGetGleb
+## Version: 0.1
+## Notes: Glaive doesn't drop. Its a hoax.
+## Author: Bluey
+## SavedVariables: AGG_SV
+
+AmGetGleb.lua
+AmGetGleb.toc
