@@ -7,6 +7,9 @@ local ADDON_VERSION = 0.1
 local ITEM_WARGLAIVE_MAINHAND = 32837
 local ITEM_WARGLAIVE_OFFHAND = 32838
 local TEXTURE_WARGLAIVE_MAINHAND = select(10,GetItemInfo(ITEM_WARGLAIVE_MAINHAND))
+local TEXTURE_GLOW = "Interface\\Addons\\AmGetGleb\\Textures\\glowTex.tga"
+local TEXTURE_BAR = "Interface\\Addons\\AmGetGleb\\Textures\\Runes.tga"
+local COLOR_GOLDEN = {1, 0.84, 0, 1}
 local SPELL_PROC_ID = 41434
 local SPELL_PROC_NAME = "The Twin Blades of Azzinoth"
 local SPELL_PROC_ICD = 45
@@ -36,6 +39,21 @@ end
 
 
 local MainFrame = CreateFrame("frame", ADDON_NAME.."_MainFrame", UIParent)
+MainFrame:SetScript("OnEvent", function(self, event, ...) 
+    if tableHasKey(self,event) then
+        self[event](...) 
+    end
+end)
+MainFrame.Glow = MainFrame:CreateTexture("frame", ADDON_NAME.."_GlowFrame", MainFrame)
+MainFrame.Glow:SetTexture(TEXTURE_GLOW)
+
+local StatusBar = CreateFrame("statusbar", ADDON_NAME.."_StatusBar", UIParent)
+StatusBar:SetStatusBarTexture(TEXTURE_BAR)
+StatusBar:SetScript("OnEvent", function(self, event, ...) 
+    if tableHasKey(self,event) then
+        self[event](...) 
+    end
+end)
 
 local function addEvent(eventTable, event, eventFunc, isFrame)
     print(event)
@@ -65,6 +83,7 @@ local function MainFrame_OnLoad(self)
     MainFrame:SetWidth(AGGo.MainFrame_frameSize)
     MainFrame:SetHeight(AGGo.MainFrame_frameSize)
     MainFrame:SetPoint(AGGo.MainFrame_point, UIParent, AGGo.MainFrame_relativePoint, AGGo.MainFrame_xOfs, AGGo.MainFrame_yOfs)
+    MainFrame.Glow:SetAllPoints()
 
     print("Addon loaded")
 end
@@ -87,15 +106,22 @@ local MainFrame_OnCombatLogEvent = function(self, event, ...)
         if auraName == SPELL_PROC_ID then
             AGGo.ICD = SPELL_PROC_ICD
             AGGo.ICDstart = GetTime()
+            self:SetScript("OnUpdate", function(self, elapsed)
+                if (AGGo.ICD - elapsed) > 0 then
+                    AGGo.ICD = AGGo.ICD - elapsed  
+                    if AGGo.ICD < 5 then
+                        self.Glow:Show()
+                        self.Glow:SetColorTexture(unpack(COLOR_GOLDEN))
+                        StatusBar:SetStatusBarColor(unpack(COLOR_GOLDEN))
+                    end
+                else
+                    AGGo.ICD = 0 
+                    self:SetScript("OnUpdate", nil)
+                end
+                StatusBar:SetValue(AGGo.ICD)
+            end)
             self.cooldown:SetCooldown(now - latency/1000, SPELL_PROC_ICD)
         end
     end
 end
-
 addEvent(MainFrame, "COMBAT_LOG_EVENT_UNFILTERED", MainFrame_OnCombatLogEvent, true)
-
-MainFrame:SetScript("OnEvent", function(self, event, ...) 
-    if tableHasKey(self,event) then
-        self[event](...) 
-    end
-end)
